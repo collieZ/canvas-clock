@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        width: 100%;
+        height: 100vh;
+        background-color: beige;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <canvas id="clock" width="800" height="600"></canvas>
+      <div style="margin-top: 50px;">
+        <p>当前时间为:</p>
+        <span id="timeArea"></span>
+      </div>
+    </div>
+    <script>
+      onload = function () {
+        let canvas = document.getElementById("clock");
+        let timeDisplay = document.getElementById("timeArea");
+        let ctx = canvas.getContext("2d");
+        let angle = (Math.PI * 2) / 360; // 角度转弧度
+        const clockR = (Math.min(ctx.canvas.width, ctx.canvas.height) - 50) / 2; // clock半径
+        const clockInnerR = clockR - 20; // clock内圈半径
+        const pointLen = clockInnerR - 20; // clock刻度指针长度
+        const clockPoints = [
+          {
+            move: [
+              Math.sin(angle * 30) * clockInnerR,
+              -Math.cos(angle * 30) * clockInnerR,
+            ], // 30
+            line: [
+              Math.sin(angle * 30) * pointLen,
+              -Math.cos(angle * 30) * pointLen,
+            ],
+          },
+          {
+            move: [
+              Math.sin(angle * 60) * clockInnerR,
+              -Math.cos(angle * 60) * clockInnerR,
+            ], // 60
+            line: [
+              Math.sin(angle * 60) * pointLen,
+              -Math.cos(angle * 60) * pointLen,
+            ],
+          },
+          {
+            move: [
+              Math.sin(angle * 30) * clockInnerR,
+              Math.cos(angle * 30) * clockInnerR,
+            ],
+            line: [
+              Math.sin(angle * 30) * pointLen,
+              Math.cos(angle * 30) * pointLen,
+            ],
+          },
+          {
+            move: [
+              Math.sin(angle * 60) * clockInnerR,
+              Math.cos(angle * 60) * clockInnerR,
+            ],
+            line: [
+              Math.sin(angle * 60) * pointLen,
+              Math.cos(angle * 60) * pointLen,
+            ],
+          },
+          {
+            move: [
+              -Math.sin(angle * 30) * clockInnerR,
+              Math.cos(angle * 30) * clockInnerR,
+            ],
+            line: [
+              -Math.sin(angle * 30) * pointLen,
+              Math.cos(angle * 30) * pointLen,
+            ],
+          },
+          {
+            move: [
+              -Math.sin(angle * 60) * clockInnerR,
+              Math.cos(angle * 60) * clockInnerR,
+            ],
+            line: [
+              -Math.sin(angle * 60) * pointLen,
+              Math.cos(angle * 60) * pointLen,
+            ],
+          },
+          {
+            move: [
+              -Math.sin(angle * 30) * clockInnerR,
+              -Math.cos(angle * 30) * clockInnerR,
+            ],
+            line: [
+              -Math.sin(angle * 30) * pointLen,
+              -Math.cos(angle * 30) * pointLen,
+            ],
+          },
+          {
+            move: [
+              -Math.sin(angle * 60) * clockInnerR,
+              -Math.cos(angle * 60) * clockInnerR,
+            ],
+            line: [
+              -Math.sin(angle * 60) * pointLen,
+              -Math.cos(angle * 60) * pointLen,
+            ],
+          },
+          // 四个整点 3 6 9 12
+          {
+            move: [
+              Math.sin(angle * 0) * clockInnerR,
+              -Math.cos(angle * 0) * clockInnerR,
+            ],
+            line: [0, -pointLen],
+          },
+          {
+            move: [
+              Math.sin(angle * 0) * clockInnerR,
+              Math.cos(angle * 0) * clockInnerR,
+            ],
+            line: [0, pointLen],
+          },
+          {
+            move: [
+              Math.cos(angle * 0) * clockInnerR,
+              Math.sin(angle * 0) * clockInnerR,
+            ],
+            line: [pointLen, 0],
+          },
+          {
+            move: [
+              -Math.cos(angle * 0) * clockInnerR,
+              Math.sin(angle * 0) * clockInnerR,
+            ],
+            line: [-pointLen, 0],
+          },
+        ];
+        let w = ctx.canvas.width / 2;
+        let h = ctx.canvas.height / 2;
+
+        function calcTime() {
+          const hR = 0.4;
+          const mR = 0.7;
+          const sR = 0.9;
+          let amOrpm = "Am";
+          let h = new Date().getHours();
+          let m = new Date().getMinutes();
+          let s = new Date().getSeconds();
+          let hNow;
+          let hAngle = 0;
+          let mAngle = 0;
+          if (h > 12) {
+            amOrpm = "Pm";
+            hNow = h - 12;
+          } else {
+            amOrpm = "Am";
+            hNow = h;
+          }
+          timeDisplay.innerText = `
+            ${amOrpm} ----            \
+            ${h < 10 ? "0" + h : h} : \
+            ${m < 10 ? "0" + m : m} : \
+            ${s < 10 ? "0" + s : s}
+          `;
+          hAngle = angle * 30 * (hNow + m / 60); // 当前时针弧度
+          mAngle = m * angle * 6; // 当前分针弧度
+          sAngle = s * angle * 6; // 当前秒针弧度
+
+          let HoursGridModifier = [1, 1]; // 时针象限正负修正数组
+          let MinutesGridModifier = [1, 1]; // 分针象限正负修正数组
+          let SecondsGridModifier = [1, 1]; // 秒针象限正负修正数组
+          const hoursRules = [
+            [0, 3, [1, -1]],
+            [3, 6, [1, 1]],
+            [6, 9, [-1, 1]],
+            [9, 12, [-1, -1]],
+          ];
+          const minutesAndSecondsRules = [
+            [0, 15, [1, -1]],
+            [15, 30, [1, 1]],
+            [30, 45, [-1, 1]],
+            [45, 60, [-1, -1]],
+          ];
+          // 时针象限修正
+          function matchGridRule(rules, target) {
+            let modifier;
+            for (let rule of rules) {
+              let [min, max, modifierArr] = rule;
+              if (target >= min && target < max) {
+                modifier = modifierArr;
+                break;
+              }
+            }
+            return modifier;
+          }
+
+          HoursGridModifier = matchGridRule(hoursRules, hNow);
+          MinutesGridModifier = matchGridRule(minutesAndSecondsRules, m);
+          SecondsGridModifier = matchGridRule(minutesAndSecondsRules, s);
+
+          function translateAxis(arr = [], modifierArr = [1, 1]) {
+            // 根据传入的修正数组生成符合当前象限的指针坐标值
+            let pointAxis = arr.reduce((pre, cur, index) => {
+              return (newarr = [...pre, Math.abs(cur) * modifierArr[index]]);
+            }, []);
+            return pointAxis;
+          }
+
+          return {
+            H: translateAxis(
+              [
+                Math.sin(hAngle) * clockInnerR * hR,
+                Math.cos(hAngle) * clockInnerR * hR,
+              ],
+              HoursGridModifier
+            ),
+            M: translateAxis(
+              [
+                Math.sin(mAngle) * clockInnerR * mR,
+                Math.cos(mAngle) * clockInnerR * mR,
+              ],
+              MinutesGridModifier
+            ),
+            S: translateAxis(
+              [
+                Math.sin(sAngle) * clockInnerR * sR,
+                Math.cos(sAngle) * clockInnerR * sR,
+              ],
+              SecondsGridModifier
+            ),
+          };
+        }
+
+        // 设置好填充的颜色和描边颜色 还未绘制图形
+        let drawClock = function () {
+          let pointAxis = calcTime();
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          // 绘制时钟
+          ctx.save();
+
+          ctx.beginPath();
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 2;
+          ctx.arc(w, h, clockR, 0, Math.PI * 2, false); // 顺时针 外圈
+          ctx.stroke();
+          ctx.closePath();
+
+          ctx.beginPath();
+          ctx.lineWidth = 1;
+          ctx.arc(w, h, clockInnerR, 0, Math.PI * 2, false); // 顺时针 内圈
+          ctx.stroke();
+          ctx.closePath();
+
+          ctx.beginPath();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "blue";
+          ctx.arc(w, h, 5, 0, Math.PI * 2, false); // 顺时针 指针固定圆
+          ctx.stroke();
+          ctx.closePath();
+
+          // 时针
+          ctx.beginPath();
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 3;
+          ctx.translate(w, h); // 移动中心点
+          ctx.moveTo(0, 0);
+          ctx.lineTo(...pointAxis.H);
+          ctx.stroke();
+          ctx.closePath();
+
+          // 分针
+          ctx.beginPath();
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 2;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(...pointAxis.M);
+          ctx.stroke();
+          ctx.closePath();
+
+          // 秒针
+          ctx.beginPath();
+          ctx.strokeStyle = "black";
+          ctx.lineWidth = 1;
+          ctx.moveTo(0, 0);
+          ctx.lineTo(...pointAxis.S);
+          ctx.stroke();
+          ctx.closePath();
+
+          // 其余刻度
+          ctx.beginPath();
+          ctx.strokeStyle = "blue";
+          clockPoints.forEach((item, index) => {
+            ctx.moveTo(...item.move);
+            ctx.lineTo(...item.line);
+          });
+          ctx.stroke();
+          ctx.closePath();
+
+          ctx.restore();
+        };
+
+        drawClock();
+        setInterval(drawClock, 200);
+      };
+    </script>
+  </body>
+</html>
